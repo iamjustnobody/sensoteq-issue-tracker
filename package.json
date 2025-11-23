@@ -1,0 +1,30 @@
+{
+  "name": "sensoteq",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "db:up": "docker-compose up -d",
+    "db:down": "docker-compose down",
+    "db:logs": "docker-compose logs -f db",
+    "db:reset": "docker-compose down -v && docker-compose up -d",
+    "db:migrate": "docker exec -i issue-tracker-db psql -U postgres -d issue_tracker < issue-tracker-backend/src/db/migrations/001_create_issues.sql",
+    "db:seed": "docker exec -i issue-tracker-db psql -U postgres -d issue_tracker < issue-tracker-backend/src/db/seed.sql",
+    "db:psql": "docker exec -it issue-tracker-db psql -U postgres -d issue_tracker",
+    "dev:backend": "cd issue-tracker-backend && npm run dev",
+    "dev:frontend": "cd issue-tracker-frontend && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "install:backend": "cd issue-tracker-backend && npm install",
+    "install:frontend": "cd issue-tracker-frontend && npm install",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "build:backend": "cd issue-tracker-backend && npm run build",
+    "build:frontend": "cd issue-tracker-frontend && npm run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "setup": "npm run install:all && npm run db:up && timeout /t 5 && npm run db:migrate && npm run db:seed",
+    "setup:unix": "npm run install:all && npm run db:up && sleep 5 && npm run db:migrate && npm run db:seed"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Issue Tracker - Full-stack application"
+}

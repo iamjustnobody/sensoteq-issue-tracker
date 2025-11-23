@@ -25,3 +25,9 @@ dist-ssr
 
 coverage/
 .vite/
+build/
+*.tsbuildinfo
+.env
+.env.local
+.env.dev
+.env.prod

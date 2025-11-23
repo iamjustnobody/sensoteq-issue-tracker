@@ -28,6 +28,7 @@ lerna-debug.log*
 .env.*.local
 .env.dev
 .env.prod
+.env*
 
 # Node modules (handled by sub-projects)
 node_modules/
