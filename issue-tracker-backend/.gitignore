@@ -1,0 +1,10 @@
+# Backend specific
+node_modules/
+dist/
+.env
+.env.local
+.env.dev
+.env.prod
+*.log
+.DS_Store
+coverage/
