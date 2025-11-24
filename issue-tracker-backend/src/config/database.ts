@@ -4,12 +4,15 @@ import "dotenv/config";
 const { Pool } = pg;
 
 const isProdDatabase =
-  !!process.env.DATABASE_URL || process.env.NODE_ENV === "production";
+  !!process.env.DATABASE_URL ||
+  (process.env.NODE_ENV !== null &&
+    process.env.NODE_ENV !== undefined &&
+    process.env.NODE_ENV === "production");
 
 console.log(
   `🔧 Database configuration: ${
     isProdDatabase ? "Production (DATABASE_URL)" : "Local Docker"
-  }`
+  } - ${process.env.NODE_ENV}`
 );
 
 const pool = isProdDatabase
