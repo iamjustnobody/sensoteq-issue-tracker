@@ -33,6 +33,16 @@ export async function runMigrations() {
     // -------------------------------------------------------
     // 2. Check if table exists
     // -------------------------------------------------------
+    console.log(`🔍 Checking for existing 'issues' table...`);
+    const isProdDatabase =
+      !!process.env.DATABASE_URL || process.env.NODE_ENV === "production";
+
+    console.log(
+      `🔧 Database configuration: ${
+        isProdDatabase ? "Production (DATABASE_URL)" : "Local Docker"
+      }`
+    );
+
     const tableCheck = await pool.query(`
       SELECT table_name
       FROM information_schema.tables 
