@@ -8,7 +8,7 @@
     "test:jest": "jest",
     "typecheck": "tsc --noEmit",
     "dev": "dotenv -e .env.local -- tsx watch src/index.ts",
-    "build": "tsc && cpy 'src/db/**/*' dist --parents",
+    "build": "tsc && cp -r src/db dist",
     "start": "dotenv -e .env.prod -- node dist/index.js",
     "start:prod": "node -r dotenv/config dist/index.js dotenv_config_path=.env.prod",
     "migrate:local": "dotenv -e .env.local -- tsx src/db/runMigrations.ts",

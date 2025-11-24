@@ -18,6 +18,7 @@ export async function runMigrations() {
     // -------------------------------------------------------
     const possibleDirs = [
       join(process.cwd(), "db/migrations"),
+      join(process.cwd(), "../db/migrations"),
       join(__dirname, "../db/migrations"),
       join(__dirname, "db/migrations"),
     ];
@@ -59,6 +60,7 @@ export async function runMigrations() {
     // -------------------------------------------------------
     const possibleSeedFiles = [
       join(process.cwd(), "db/seed.sql"),
+      join(process.cwd(), "../db/seed.sql"),
       join(__dirname, "../db/seed.sql"),
       join(__dirname, "db/seed.sql"),
     ];
