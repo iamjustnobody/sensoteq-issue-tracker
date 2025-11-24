@@ -8,6 +8,7 @@ import cors from "cors";
 import "dotenv/config";
 import routes from "./routes/index.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
+import { runMigrations } from "./db/runMigrations.js";
 
 // Load environment variables
 // dotenv.config();
@@ -79,12 +80,29 @@ app.use(errorHandler);
 // START SERVER
 // ============================================
 
-app.listen(PORT, () => {
-  console.log("=========================================");
-  console.log(`🚀 Issue Tracker API`);
-  console.log(`📡 Server running on http://localhost:${PORT}`);
-  console.log(`🔗 API endpoint: http://localhost:${PORT}/api`);
-  console.log("=========================================");
+async function main() {
+  console.log("🔄 Running migrations (only missing ones)...");
+
+  try {
+    await runMigrations(); // <--- Ensures idempotent migrations
+    console.log("✅ Migrations complete.");
+  } catch (err) {
+    console.error("❌ Migration error:", err);
+    process.exit(1); // fail fast in production
+  }
+
+  app.listen(PORT, () => {
+    console.log("=========================================");
+    console.log(`🚀 Issue Tracker API`);
+    console.log(`📡 Server running on http://localhost:${PORT}`);
+    console.log(`🔗 API endpoint: http://localhost:${PORT}/api`);
+    console.log("=========================================");
+  });
+}
+
+main().catch((err) => {
+  console.error("❌ Fatal startup error:", err);
+  process.exit(1);
 });
 
 export default app;

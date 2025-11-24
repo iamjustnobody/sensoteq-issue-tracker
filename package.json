@@ -26,5 +26,8 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "Issue Tracker - Full-stack application"
+  "description": "Issue Tracker - Full-stack application",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
 }
