@@ -1,4 +1,4 @@
-import fs from "fs";
+import fs, { existsSync } from "fs";
 import path from "path";
 import pool from "../config/database.js";
 
@@ -14,22 +14,21 @@ export async function runMigrations() {
 
   try {
     // -------------------------------------------------------
-    // 1. Load migration files
+    // 1. Determine migrations directory
     // -------------------------------------------------------
-    const migrationsDir = join(__dirname, "../db/migrations");
+    const possibleDirs = [
+      join(process.cwd(), "db/migrations"),
+      join(__dirname, "../db/migrations"),
+      join(__dirname, "db/migrations"),
+    ];
+
+    const migrationsDir = possibleDirs.find(existsSync);
+    if (!migrationsDir) throw new Error("❌ No migrations directory found!");
+
     const files = readdirSync(migrationsDir).filter((f) => f.endsWith(".sql"));
 
-    for (const file of files) {
-      const filePath = join(migrationsDir, file);
-      const sql = readFileSync(filePath, "utf-8");
-
-      console.log(`\n📄 Applying migration: ${file}`);
-      await pool.query(sql);
-      console.log(`✔️ Migration applied: ${file}`);
-    }
-
     // -------------------------------------------------------
-    // 2. Verify table exists
+    // 2. Check if table exists
     // -------------------------------------------------------
     const tableCheck = await pool.query(`
       SELECT table_name
@@ -38,33 +37,68 @@ export async function runMigrations() {
         AND table_name = 'issues'
     `);
 
-    if (tableCheck.rows.length > 0) {
-      console.log("✅ Verified: issues table exists");
+    const tableExists = tableCheck.rows.length > 0;
+
+    if (!tableExists) {
+      console.log("⚠️ Table 'issues' does not exist — applying migrations...");
+
+      for (const file of files) {
+        const filePath = join(migrationsDir, file);
+        const sql = readFileSync(filePath, "utf-8");
+
+        console.log(`\n📄 Applying migration: ${file}`);
+        await pool.query(sql);
+        console.log(`✔️ Migration applied: ${file}`);
+      }
     } else {
-      console.log("⚠️ WARNING: issues table NOT found");
+      console.log("✅ Table 'issues' already exists — skipping migrations");
     }
 
     // -------------------------------------------------------
     // 3. Optional seed
     // -------------------------------------------------------
-    const seedPath = join(__dirname, "../db/seed.sql");
-    try {
-      const seedSQL = readFileSync(seedPath, "utf-8");
-      await pool.query(seedSQL);
-      console.log("🌱 Seed data inserted");
-    } catch {
+    const possibleSeedFiles = [
+      join(process.cwd(), "db/seed.sql"),
+      join(__dirname, "../db/seed.sql"),
+      join(__dirname, "db/seed.sql"),
+    ];
+
+    const seedPath = possibleSeedFiles.find(existsSync);
+    if (seedPath) {
+      let insertSeed = false;
+
+      if (!tableExists) {
+        insertSeed = true; // table just created, so seed
+      } else {
+        // table exists, check if empty
+        const countResult = await pool.query("SELECT COUNT(*) FROM issues");
+        if (parseInt(countResult.rows[0].count, 10) === 0) {
+          insertSeed = true;
+        }
+      }
+
+      if (insertSeed) {
+        const seedSQL = readFileSync(seedPath, "utf-8");
+        await pool.query(seedSQL);
+        console.log("🌱 Seed data inserted");
+      } else {
+        console.log("ℹ️ Table already has data — skipping seeding");
+      }
+    } else {
       console.log("ℹ️ No seed.sql found — skipping seeding");
     }
 
     // -------------------------------------------------------
-    // 4. Show row count
+    // 4. Show row count (if table exists)
     // -------------------------------------------------------
-    const count = await pool.query("SELECT COUNT(*) FROM issues");
-    console.log(`📊 Total issues in DB: ${count.rows[0].count}`);
+    if (tableExists) {
+      const count = await pool.query("SELECT COUNT(*) FROM issues");
+      console.log(`📊 Total issues in DB: ${count.rows[0].count}`);
+    }
 
-    console.log("\n🎉 All migrations completed successfully!");
+    console.log("\n🎉 Migrations and seeding completed successfully!");
   } catch (err) {
     console.error("❌ Migration failed:", err);
-    throw err;
+    throw err; // fail fast
   }
 }

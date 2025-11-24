@@ -49,6 +49,12 @@
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  "include": ["src", "src/**/*", "src/db/**/*"],
+  "include": [
+    "src",
+    "src/**/*",
+    "src/db/**/*",
+    "src/**/*.ts",
+    "src/db/**/*.sql"
+  ],
   "exclude": ["node_modules", "dist"]
 }
