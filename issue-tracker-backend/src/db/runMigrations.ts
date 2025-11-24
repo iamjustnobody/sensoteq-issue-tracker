@@ -17,10 +17,12 @@ export async function runMigrations() {
     // 1. Determine migrations directory
     // -------------------------------------------------------
     const possibleDirs = [
-      join(process.cwd(), "db/migrations"),
-      join(process.cwd(), "../db/migrations"),
-      join(__dirname, "../db/migrations"),
+      // join(process.cwd(), "db/migrations"),
+      // join(process.cwd(), "../db/migrations"),
+
       join(__dirname, "db/migrations"),
+      join(__dirname, "../src/db/migrations"),
+      join(__dirname, "../db/migrations"),
     ];
 
     const migrationsDir = possibleDirs.find(existsSync);
@@ -59,10 +61,12 @@ export async function runMigrations() {
     // 3. Optional seed
     // -------------------------------------------------------
     const possibleSeedFiles = [
-      join(process.cwd(), "db/seed.sql"),
-      join(process.cwd(), "../db/seed.sql"),
-      join(__dirname, "../db/seed.sql"),
+      // join(process.cwd(), "db/seed.sql"),
+      // join(process.cwd(), "../db/seed.sql"),
+
       join(__dirname, "db/seed.sql"),
+      join(__dirname, "../src/db/seed.sql"),
+      join(__dirname, "../db/seed.sql"),
     ];
 
     const seedPath = possibleSeedFiles.find(existsSync);
