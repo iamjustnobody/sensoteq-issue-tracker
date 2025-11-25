@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Search, LayoutGrid, Table, Plus, Loader2 } from "lucide-react";
-import { Button, Input } from "../components/ui";
+import { Button } from "../components/ui";
 import { IssueCard, IssueTable } from "../components/issues";
 import { IssueForm } from "../components/issues/IssueForm";
 import { STATUS_CONFIG } from "../utils/constants";
