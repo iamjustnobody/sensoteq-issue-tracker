@@ -80,16 +80,23 @@ app.use(errorHandler);
 // ============================================
 // START SERVER
 // ============================================
-const shouldRunMigrations = process.env.RUN_MIGRATIONS_ON_STARTUP === "true";
+const isProdDatabase =
+  !!process.env.DATABASE_URL ||
+  (process.env.NODE_ENV !== null &&
+    process.env.NODE_ENV !== undefined &&
+    process.env.NODE_ENV === "production");
+const shouldRunMigrations =
+  process.env.RUN_MIGRATIONS_ON_STARTUP === "true" ||
+  (process.env.RUN_MIGRATIONS_ON_STARTUP === "auto" &&
+    !!process.env.DATABASE_URL);
 
 async function main() {
   if (shouldRunMigrations) {
     console.log(
-      "🔄 Running migrations (only missing ones)...",
-      process.env.RUN_MIGRATIONS_ON_STARTUP,
-      process.env.NODE_ENV,
-      process.env.DATABASE_URL,
-      "111"
+      "🔄 Running migrations (only missing ones)..."
+      // process.env.RUN_MIGRATIONS_ON_STARTUP,
+      // process.env.NODE_ENV,
+      // process.env.DATABASE_URL,
     );
 
     try {

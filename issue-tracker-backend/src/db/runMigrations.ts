@@ -38,11 +38,11 @@ export async function runMigrations(pool: Pool) {
     const isProdDatabase =
       !!process.env.DATABASE_URL || process.env.NODE_ENV === "production";
 
-    console.log(
-      `🔧 Database configuration: ${
-        isProdDatabase ? "Production (DATABASE_URL)" : "Local Docker"
-      } - ${process.env.NODE_ENV}`
-    );
+    // console.log(
+    //   `🔧 Database configuration: ${
+    //     isProdDatabase ? "Production (DATABASE_URL)" : "Local Docker"
+    //   } - ${process.env.NODE_ENV}`
+    // );
 
     const tableCheck = await pool.query(`
       SELECT table_name
