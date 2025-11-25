@@ -19,9 +19,9 @@ export const issueApi = {
     if (filters?.status) params.append("status", filters.status);
     if (filters?.search) params.append("search", filters.search);
 
-    const { data } = await api.get<ApiResponse<Issue[]>>(
-      `/issues?${params.toString()}`
-    );
+    const queryString = params.toString();
+    const url = queryString ? `/issues?${queryString}` : `/issues`;
+    const { data } = await api.get<ApiResponse<Issue[]>>(url);
     return data.data;
   },
 
