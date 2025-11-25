@@ -83,12 +83,13 @@ app.use(errorHandler);
 const shouldRunMigrations = process.env.RUN_MIGRATIONS_ON_STARTUP === "true";
 
 async function main() {
-  if (shouldRunMigrations) {
+  if (!shouldRunMigrations) {
     console.log(
       "🔄 Running migrations (only missing ones)...",
       process.env.RUN_MIGRATIONS_ON_STARTUP,
       process.env.NODE_ENV,
-      process.env.DATABASE_URL
+      process.env.DATABASE_URL,
+      "111"
     );
 
     try {
