@@ -9,6 +9,7 @@ import "dotenv/config";
 import routes from "./routes/index.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 import { runMigrations } from "./db/runMigrations.js";
+import pool from "./config/database.js";
 
 // Load environment variables
 // dotenv.config();
@@ -79,16 +80,19 @@ app.use(errorHandler);
 // ============================================
 // START SERVER
 // ============================================
+const shouldRunMigrations = process.env.RUN_MIGRATIONS_ON_STARTUP === "true";
 
 async function main() {
-  console.log("🔄 Running migrations (only missing ones)...");
+  if (shouldRunMigrations) {
+    console.log("🔄 Running migrations (only missing ones)...");
 
-  try {
-    await runMigrations(); // <--- Ensures idempotent migrations
-    console.log("✅ Migrations complete.");
-  } catch (err) {
-    console.error("❌ Migration error:", err);
-    process.exit(1); // fail fast in production
+    try {
+      await runMigrations(pool); // <--- Ensures idempotent migrations
+      console.log("✅ Migrations complete.");
+    } catch (err) {
+      console.error("❌ Migration error:", err);
+      process.exit(1); // fail fast in production
+    }
   }
 
   app.listen(PORT, () => {

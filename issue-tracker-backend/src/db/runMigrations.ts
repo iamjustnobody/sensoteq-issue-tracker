@@ -1,6 +1,7 @@
 import fs, { existsSync } from "fs";
 import path from "path";
-import pool from "../config/database.js";
+// import pool from "../config/database.js";
+import type { Pool } from "pg";
 
 const { readdirSync, readFileSync } = fs;
 const { join, dirname } = path;
@@ -9,7 +10,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export async function runMigrations() {
+export async function runMigrations(pool: Pool) {
   console.log("\n🔄 Running migrations...");
 
   try {
@@ -40,7 +41,7 @@ export async function runMigrations() {
     console.log(
       `🔧 Database configuration: ${
         isProdDatabase ? "Production (DATABASE_URL)" : "Local Docker"
-      }`
+      } - ${process.env.NODE_ENV}`
     );
 
     const tableCheck = await pool.query(`
