@@ -84,7 +84,12 @@ const shouldRunMigrations = process.env.RUN_MIGRATIONS_ON_STARTUP === "true";
 
 async function main() {
   if (shouldRunMigrations) {
-    console.log("🔄 Running migrations (only missing ones)...");
+    console.log(
+      "🔄 Running migrations (only missing ones)...",
+      process.env.RUN_MIGRATIONS_ON_STARTUP,
+      process.env.NODE_ENV,
+      process.env.DATABASE_URL
+    );
 
     try {
       await runMigrations(pool); // <--- Ensures idempotent migrations
