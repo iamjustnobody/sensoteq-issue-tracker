@@ -6,6 +6,7 @@ import { Sidebar } from "./Sidebar.js";
 import { Header } from "./Header.js";
 import { useIssues } from "../../hooks/index.js";
 import { NAV_ITEMS } from "../../config/routes.js";
+import { useIssuesQuery } from "../../hooks/useIssueQuery.js";
 
 // Page loading fallback
 const PageLoader: React.FC = () => (
@@ -18,6 +19,7 @@ export const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const { issues } = useIssues();
+  // const { issues } = useIssuesQuery();
 
   // Calculate stats for sidebar
   const totalIssues = issues.length;

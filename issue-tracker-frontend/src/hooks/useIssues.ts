@@ -29,7 +29,6 @@ export function useIssues(): UseIssuesReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<IssueFilters>({});
-
   // Fetch issues
   const fetchIssues = useCallback(async () => {
     try {

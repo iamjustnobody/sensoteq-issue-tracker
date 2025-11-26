@@ -14,10 +14,14 @@ import {
   ProgressChart,
 } from "../components/analytics/index.js";
 import { useAnalytics, useIssues } from "../hooks/index.js";
+import { useAnalyticsQuery } from "../hooks/useAnalyticQuery.js";
+import { useIssuesQuery } from "../hooks/useIssueQuery.js";
 
 const AnalyticsPage: React.FC = () => {
-  const { data: analytics, isLoading: analyticsLoading } = useAnalytics();
-  const { issues, isLoading: issuesLoading } = useIssues();
+  // const { data: analytics, isLoading: analyticsLoading } = useAnalytics();
+  // const { issues, isLoading: issuesLoading } = useIssues();
+  const { data: analytics, isLoading: analyticsLoading } = useAnalyticsQuery();
+  const { issues, isLoading: issuesLoading } = useIssuesQuery();
 
   const isLoading = analyticsLoading || issuesLoading;
 
