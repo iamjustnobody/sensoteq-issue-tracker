@@ -121,7 +121,7 @@ export const IssueForm: React.FC<IssueFormProps> = ({
       className="max-w-md"
     >
       <div className="min-h-[420px]">
-        {isLoadingIssue && isEditMode ? (
+        {isLoadingIssue && isEditMode && false ? (
           // Loading skeleton while fetching issue
           <LoadFormModal />
         ) : fetchError ? (
@@ -241,7 +241,9 @@ export const IssueForm: React.FC<IssueFormProps> = ({
                 disabled={!isValid || isSubmitting}
                 className="flex-1"
               >
-                {isEditMode ? "Update" : "Create"}
+                <span className="text-blue-700">
+                  {isEditMode ? "Update" : "Create"}
+                </span>
               </Button>
             </div>
           </form>

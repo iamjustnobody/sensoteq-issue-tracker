@@ -6,7 +6,7 @@ import { Button, SkeletonCard, SkeletonTable } from "../components/ui/index.js";
 import { IssueCard, IssueTable } from "../components/issues/index.js";
 import { IssueForm } from "../components/issues/IssueForm.js";
 import { STATUS_CONFIG } from "../utils/constants.js";
-import { useIssues, useDebounce, useIssues_custom } from "../hooks/index.js";
+import { useDebounce } from "../hooks/index.js";
 import type { IssueStatus } from "../types/index.js";
 import { useIssuesQuery } from "../hooks/useIssueQuery.js";
 import { VirtualizedIssueTable } from "../components/issues/VirtualizedIssueTable.js";
@@ -14,12 +14,6 @@ import { VirtualizedIssueTable } from "../components/issues/VirtualizedIssueTabl
 type ViewMode = "card" | "table" | "virtual";
 
 const IssuesPage: React.FC = () => {
-  // const { issues, isLoading, updateStatus, deleteIssue, refetch } =
-  //   useIssues_custom();
-  // const { issues, isLoading, updateStatus, deleteIssue, refetch } =
-  //   useIssuesQuery2();
-  // const { issues, isLoading, updateStatus, deleteIssue, refetch } = useIssues();
-
   const [viewMode, setViewMode] = useState<ViewMode>("card");
   const [searchQuery, setSearchQuery] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -169,8 +163,8 @@ const IssuesPage: React.FC = () => {
           </div>
 
           <Button onClick={handleOpenCreate}>
-            <Plus size={18} className="mr-2" />
-            <span className="hidden sm:inline">Add Issue</span>
+            <Plus size={18} className="mr-2 text-blue-700" />
+            <span className="hidden sm:inline text-blue-700">Add Issue</span>
           </Button>
         </div>
       </div>

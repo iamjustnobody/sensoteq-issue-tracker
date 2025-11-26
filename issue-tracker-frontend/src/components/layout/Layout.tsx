@@ -4,7 +4,6 @@ import { Loader2 } from "lucide-react";
 
 import { Sidebar } from "./Sidebar.js";
 import { Header } from "./Header.js";
-import { useIssues, useIssues_custom } from "../../hooks/index.js";
 import { NAV_ITEMS } from "../../config/routes.js";
 import { useIssuesQuery } from "../../hooks/useIssueQuery.js";
 
@@ -18,9 +17,6 @@ const PageLoader: React.FC = () => (
 export const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  // const { issues } = useIssues_custom();
-  // const { issues } = useIssuesQuery2();
-  // const { issues } = useIssues();
   const { issues } = useIssuesQuery();
 
   // Calculate stats for sidebar

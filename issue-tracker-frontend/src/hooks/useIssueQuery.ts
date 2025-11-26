@@ -9,9 +9,6 @@ import type {
   IssueFilters,
   IssueStatus,
 } from "../types";
-import { useIssuesStore } from "../stores/useIssueStore";
-import { useEffect } from "react";
-// import { useIssuesStore } from "../stores/useIssuesStore";
 
 /**
  * React Query hook for managing issues with optimistic updates
@@ -44,10 +41,10 @@ export function useIssuesQuery(filters?: IssueFilters) {
   // ============================================
   // SYNC: Update Zustand store when data changes
   // ============================================
-  const setIssues = useIssuesStore((state) => state.setIssues);
-  useEffect(() => {
-    setIssues(issues);
-  }, [issues, setIssues]);
+  // const setIssues = useIssuesStore((state) => state.setIssues);
+  // useEffect(() => {
+  //   setIssues(issues);
+  // }, [issues, setIssues]);
 
   // ============================================
   // MUTATION: Create issue
