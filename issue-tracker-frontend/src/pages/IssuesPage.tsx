@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from "react";
 import { Search, LayoutGrid, Table, Plus } from "lucide-react";
-import toast from "react-hot-toast";
 
 import { Button, SkeletonCard, SkeletonTable } from "../components/ui/index.js";
 import { IssueCard, IssueTable } from "../components/issues/index.js";
@@ -24,11 +23,9 @@ const IssuesPage: React.FC = () => {
   const {
     issues,
     isLoading,
-    error,
+
     updateStatus,
     deleteIssue,
-    createIssue,
-    updateIssue,
     refetch,
     isCreating,
     isUpdating,

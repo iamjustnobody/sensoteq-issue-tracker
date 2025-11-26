@@ -1,5 +1,5 @@
 import { lazy, type ComponentType } from "react";
-import { Home, BarChart3, Settings, type LucideIcon } from "lucide-react";
+import { Home, BarChart3, type LucideIcon } from "lucide-react";
 
 // Lazy load pages
 export const IssuesPage = lazy(() => import("../pages/IssuesPage.js"));

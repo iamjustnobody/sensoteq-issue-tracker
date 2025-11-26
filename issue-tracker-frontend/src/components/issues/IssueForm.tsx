@@ -86,7 +86,8 @@ export const IssueForm: React.FC<IssueFormProps> = ({
     }
   }, [isOpen, isEditMode, issue, reset]);
 
-  const onSubmit = async (data: CreateIssueFormData) => {
+  const onSubmit = async () => {
+    //(data: CreateIssueFormData)
     try {
       // The actual API call is handled by the parent component
       // through the onSuccess callback
