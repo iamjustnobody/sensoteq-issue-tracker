@@ -19,8 +19,9 @@ export const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   // const { issues } = useIssues_custom();
-  // const { issues } = useIssuesQuery();
-  const { issues } = useIssues();
+  // const { issues } = useIssuesQuery2();
+  // const { issues } = useIssues();
+  const { issues } = useIssuesQuery();
 
   // Calculate stats for sidebar
   const totalIssues = issues.length;

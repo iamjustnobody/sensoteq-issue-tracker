@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { issueApi } from "../services/api-fetch";
+import { issueApi, ApiError } from "../services/api-fetch";
+import { queryKeys } from "../lib/queryClient";
 import toast from "react-hot-toast";
 import type {
   Issue,
@@ -8,131 +9,247 @@ import type {
   IssueFilters,
   IssueStatus,
 } from "../types";
+import { useIssuesStore } from "../stores/useIssueStore";
+import { useEffect } from "react";
+// import { useIssuesStore } from "../stores/useIssuesStore";
 
-const QUERY_KEYS = {
-  issues: (filters?: IssueFilters) => ["issues", filters] as const,
-  issue: (id: number) => ["issues", id] as const,
-};
-
+/**
+ * React Query hook for managing issues with optimistic updates
+ */
 export function useIssuesQuery(filters?: IssueFilters) {
   const queryClient = useQueryClient();
 
-  // Fetch all issues
-  const issuesQuery = useQuery({
-    queryKey: QUERY_KEYS.issues(filters),
+  // ============================================
+  // QUERY: Fetch all issues
+  // ============================================
+  const {
+    data: issues = [],
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.issues.list(filters),
     queryFn: () => issueApi.getAll(filters),
+    staleTime: 30 * 1000, // Consider data fresh for 30 seconds
+    retry: (failureCount, error) => {
+      // Don't retry on client errors (4xx)
+      if (error instanceof ApiError && error.isClientError()) {
+        return false;
+      }
+      // Retry up to 2 times for network errors
+      return failureCount < 2;
+    },
   });
 
-  // Create issue mutation
+  // ============================================
+  // SYNC: Update Zustand store when data changes
+  // ============================================
+  const setIssues = useIssuesStore((state) => state.setIssues);
+  useEffect(() => {
+    setIssues(issues);
+  }, [issues, setIssues]);
+
+  // ============================================
+  // MUTATION: Create issue
+  // ============================================
   const createMutation = useMutation({
     mutationFn: (data: CreateIssueDTO) => issueApi.create(data),
+    onMutate: async (newIssue) => {
+      // Cancel outgoing refetches to prevent overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: queryKeys.issues.lists() });
+
+      // Snapshot previous value for rollback
+      const previousIssues = queryClient.getQueryData<Issue[]>(
+        queryKeys.issues.list(filters)
+      );
+
+      // Optimistically update with temporary issue
+      queryClient.setQueryData<Issue[]>(
+        queryKeys.issues.list(filters),
+        (old = []) => [
+          {
+            id: Date.now(), // Temporary ID
+            ...newIssue,
+            status: newIssue.status || "not-started",
+            progress: newIssue.progress || 0,
+            description: newIssue.description || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          } as Issue,
+          ...old,
+        ]
+      );
+
+      return { previousIssues };
+    },
+    onError: (error, _newIssue, context) => {
+      // Rollback on error
+      if (context?.previousIssues) {
+        queryClient.setQueryData(
+          queryKeys.issues.list(filters),
+          context.previousIssues
+        );
+      }
+
+      // Show user-friendly error message
+      const message =
+        error instanceof ApiError ? error.message : "Failed to create issue";
+      toast.error(message);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["issues"] });
       toast.success("Issue created successfully");
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to create issue");
+    onSettled: () => {
+      // Always refetch to sync with server
+      queryClient.invalidateQueries({ queryKey: queryKeys.issues.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.analytics.all() });
     },
   });
 
-  // Update issue mutation
+  // ============================================
+  // MUTATION: Update issue
+  // ============================================
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateIssueDTO }) =>
       issueApi.update(id, data),
     onMutate: async ({ id, data }) => {
-      // Optimistic update
-      await queryClient.cancelQueries({ queryKey: ["issues"] });
+      await queryClient.cancelQueries({ queryKey: queryKeys.issues.lists() });
 
       const previousIssues = queryClient.getQueryData<Issue[]>(
-        QUERY_KEYS.issues(filters)
+        queryKeys.issues.list(filters)
       );
 
-      if (previousIssues) {
-        queryClient.setQueryData<Issue[]>(
-          QUERY_KEYS.issues(filters),
-          previousIssues.map((issue) =>
-            issue.id === id ? { ...issue, ...data } : issue
+      // Optimistic update
+      queryClient.setQueryData<Issue[]>(
+        queryKeys.issues.list(filters),
+        (old = []) =>
+          old.map((issue) =>
+            issue.id === id
+              ? { ...issue, ...data, updated_at: new Date().toISOString() }
+              : issue
           )
-        );
-      }
+      );
 
       return { previousIssues };
     },
-    onError: (error: Error, _, context) => {
-      // Rollback on error
+    onError: (error, _variables, context) => {
       if (context?.previousIssues) {
         queryClient.setQueryData(
-          QUERY_KEYS.issues(filters),
+          queryKeys.issues.list(filters),
           context.previousIssues
         );
       }
-      toast.error(error.message || "Failed to update issue");
+
+      const message =
+        error instanceof ApiError ? error.message : "Failed to update issue";
+      toast.error(message);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["issues"] });
       toast.success("Issue updated successfully");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.issues.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.analytics.all() });
     },
   });
 
-  // Delete issue mutation
+  // ============================================
+  // MUTATION: Delete issue
+  // ============================================
   const deleteMutation = useMutation({
     mutationFn: (id: number) => issueApi.delete(id),
     onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: ["issues"] });
+      await queryClient.cancelQueries({ queryKey: queryKeys.issues.lists() });
 
       const previousIssues = queryClient.getQueryData<Issue[]>(
-        QUERY_KEYS.issues(filters)
+        queryKeys.issues.list(filters)
       );
 
-      if (previousIssues) {
-        queryClient.setQueryData<Issue[]>(
-          QUERY_KEYS.issues(filters),
-          previousIssues.filter((issue) => issue.id !== id)
-        );
-      }
+      // Optimistic delete
+      queryClient.setQueryData<Issue[]>(
+        queryKeys.issues.list(filters),
+        (old = []) => old.filter((issue) => issue.id !== id)
+      );
 
       return { previousIssues };
     },
-    onError: (error: Error, _, context) => {
+    onError: (error, _id, context) => {
       if (context?.previousIssues) {
         queryClient.setQueryData(
-          QUERY_KEYS.issues(filters),
+          queryKeys.issues.list(filters),
           context.previousIssues
         );
       }
-      toast.error(error.message || "Failed to delete issue");
+
+      const message =
+        error instanceof ApiError ? error.message : "Failed to delete issue";
+      toast.error(message);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["issues"] });
       toast.success("Issue deleted successfully");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.issues.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.analytics.all() });
     },
   });
 
-  // Helper function for quick status update
-  const updateStatus = (id: number, status: IssueStatus) => {
+  // ============================================
+  // Helper functions
+  // ============================================
+  const createIssue = async (data: CreateIssueDTO) => {
+    return createMutation.mutateAsync(data);
+  };
+
+  const updateIssue = async (id: number, data: UpdateIssueDTO) => {
+    return updateMutation.mutateAsync({ id, data });
+  };
+
+  const deleteIssue = async (id: number) => {
+    return deleteMutation.mutateAsync(id);
+  };
+
+  const updateStatus = async (id: number, status: IssueStatus) => {
     const progress =
       status === "completed" ? 100 : status === "not-started" ? 0 : 50;
     return updateMutation.mutateAsync({ id, data: { status, progress } });
   };
 
+  // ============================================
+  // Return values
+  // ============================================
   return {
-    issues: issuesQuery.data ?? [],
-    isLoading: issuesQuery.isLoading,
-    error: issuesQuery.error?.message ?? null,
-    refetch: issuesQuery.refetch,
-    createIssue: createMutation.mutateAsync,
-    updateIssue: (id: number, data: UpdateIssueDTO) =>
-      updateMutation.mutateAsync({ id, data }),
-    deleteIssue: deleteMutation.mutateAsync,
+    issues,
+    isLoading,
+    error:
+      error instanceof ApiError ? error.message : error?.toString() || null,
+    createIssue,
+    updateIssue,
+    deleteIssue,
     updateStatus,
+    refetch,
+    // Expose mutation states for advanced usage
+    isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
+    isDeleting: deleteMutation.isPending,
   };
 }
 
-// Fetch single issue
-export function useIssueQuery(id: number) {
+// ============================================
+// Hook for fetching single issue
+// ============================================
+export function useIssueQuery(id: number | null | undefined) {
   return useQuery({
-    queryKey: QUERY_KEYS.issue(id),
-    queryFn: () => issueApi.getById(id),
-    enabled: !!id,
+    queryKey: queryKeys.issues.detail(id!),
+    queryFn: () => issueApi.getById(id!),
+    enabled: id != null, // Only fetch if ID is provided
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: (failureCount, error) => {
+      // Don't retry if issue not found
+      if (error instanceof ApiError && error.isNotFound()) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 }

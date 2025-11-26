@@ -9,15 +9,16 @@ import { STATUS_CONFIG } from "../utils/constants.js";
 import { useIssues, useDebounce, useIssues_custom } from "../hooks/index.js";
 import type { IssueStatus } from "../types/index.js";
 import { useIssuesQuery } from "../hooks/useIssueQuery.js";
+import { VirtualizedIssueTable } from "../components/issues/VirtualizedIssueTable.js";
 
-type ViewMode = "card" | "table";
+type ViewMode = "card" | "table" | "virtual";
 
 const IssuesPage: React.FC = () => {
   // const { issues, isLoading, updateStatus, deleteIssue, refetch } =
   //   useIssues_custom();
   // const { issues, isLoading, updateStatus, deleteIssue, refetch } =
-  //   useIssuesQuery();
-  const { issues, isLoading, updateStatus, deleteIssue, refetch } = useIssues();
+  //   useIssuesQuery2();
+  // const { issues, isLoading, updateStatus, deleteIssue, refetch } = useIssues();
 
   const [viewMode, setViewMode] = useState<ViewMode>("card");
   const [searchQuery, setSearchQuery] = useState("");
@@ -25,6 +26,20 @@ const IssuesPage: React.FC = () => {
   const [editingIssueId, setEditingIssueId] = useState<number | null>(null);
 
   const debouncedSearch = useDebounce(searchQuery, 300);
+
+  const {
+    issues,
+    isLoading,
+    error,
+    updateStatus,
+    deleteIssue,
+    createIssue,
+    updateIssue,
+    refetch,
+    isCreating,
+    isUpdating,
+    isDeleting,
+  } = useIssuesQuery({ search: debouncedSearch });
 
   // Filter issues based on search
   const filteredIssues = useMemo(() => {
@@ -142,6 +157,15 @@ const IssuesPage: React.FC = () => {
             >
               <Table size={18} />
             </button>
+            <button
+              onClick={() => setViewMode("virtual")}
+              className={`px-2 rounded-md transition-colors text-xs font-medium ${
+                viewMode === "virtual" ? "bg-white shadow" : ""
+              }`}
+              title="Virtualized Table (for large lists)"
+            >
+              Virtual
+            </button>
           </div>
 
           <Button onClick={handleOpenCreate}>
@@ -150,6 +174,15 @@ const IssuesPage: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* Loading indicator for mutations */}
+      {(isCreating || isUpdating || isDeleting) && (
+        <div className="mb-4 p-2 bg-blue-50 text-blue-700 rounded-lg text-sm">
+          {isCreating && "Creating issue..."}
+          {isUpdating && "Updating issue..."}
+          {isDeleting && "Deleting issue..."}
+        </div>
+      )}
 
       {/* Issues display */}
       {viewMode === "card" ? (
@@ -194,6 +227,13 @@ const IssuesPage: React.FC = () => {
             }
           )}
         </div>
+      ) : viewMode === "virtual" ? (
+        <VirtualizedIssueTable
+          issues={filteredIssues}
+          onEdit={(issue) => handleOpenEdit(issue.id)}
+          onDelete={handleDelete}
+          onStatusChange={updateStatus}
+        />
       ) : (
         <IssueTable
           issues={filteredIssues}

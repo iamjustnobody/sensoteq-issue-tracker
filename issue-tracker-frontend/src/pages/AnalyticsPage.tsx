@@ -26,9 +26,11 @@ const AnalyticsPage: React.FC = () => {
   // const { data: analytics, isLoading: analyticsLoading } = useAnalytics_custom();
   // const { issues, isLoading: issuesLoading } = useIssues_custom();
   // const { data: analytics, isLoading: analyticsLoading } = useAnalyticsQuery();
-  // const { issues, isLoading: issuesLoading } = useIssuesQuery();
-  const { data: analytics, isLoading: analyticsLoading } = useAnalytics();
-  const { issues, isLoading: issuesLoading } = useIssues();
+  // const { issues, isLoading: issuesLoading } = useIssuesQuery2();
+  // const { data: analytics, isLoading: analyticsLoading } = useAnalytics();
+  // const { issues, isLoading: issuesLoading } = useIssues();
+  const { data: analytics, isLoading: analyticsLoading } = useAnalyticsQuery();
+  const { issues, isLoading: issuesLoading } = useIssuesQuery();
 
   const isLoading = analyticsLoading || issuesLoading;
 

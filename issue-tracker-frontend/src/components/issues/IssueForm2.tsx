@@ -1,21 +1,24 @@
 import React, { useEffect } from "react";
 import { useForm, Controller, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+// import { Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
-import { Modal, Button } from "../ui/index.js";
-import { useIssueQuery } from "../../hooks/useIssueQuery.js";
-import { LoadFormModal } from "./LoadFormModal.js";
+import { Modal, Button, Input } from "../ui/index.js";
+import { Skeleton } from "../ui/Skeleton.js";
 import {
   createIssueSchema,
   type CreateIssueFormData,
 } from "../../schemas/issue.schema.js";
+import { issueApi } from "../../services/api.js";
 import { STATUS_OPTIONS } from "../../utils/constants.js";
+import { LoadFormModal } from "./LoadFormModal.js";
+// import type { Issue } from "../../types/index.js";
 
 interface IssueFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void; // Called after successful create/update
+  onSuccess: () => void; // Called after successful create/update to refetch list
   issueId?: number | null; // If provided, fetch and edit this issue
 }
 
@@ -27,12 +30,8 @@ export const IssueForm: React.FC<IssueFormProps> = ({
 }) => {
   const isEditMode = issueId != null;
 
-  // Fetch issue data for editing (only if issueId is provided)
-  const {
-    data: issue,
-    isLoading: isLoadingIssue,
-    error: fetchError,
-  } = useIssueQuery(isEditMode ? issueId : null);
+  const [isLoadingIssue, setIsLoadingIssue] = React.useState(false);
+  const [fetchError, setFetchError] = React.useState<string | null>(null);
 
   const {
     register,
@@ -51,30 +50,14 @@ export const IssueForm: React.FC<IssueFormProps> = ({
       status: "not-started",
       progress: 0,
     },
-    mode: "onChange",
+    mode: "onChange", // Validate on change for real-time feedback
   });
 
   const progressValue = watch("progress");
 
-  // Populate form when issue data is loaded
+  // Fetch issue data when modal opens in edit mode
   useEffect(() => {
-    if (isOpen) {
-      if (isEditMode && issue) {
-        reset({
-          title: issue.title,
-          description: issue.description || "",
-          status: issue.status,
-          progress: issue.progress,
-        });
-      } else if (!isEditMode) {
-        reset({
-          title: "",
-          description: "",
-          status: "not-started",
-          progress: 0,
-        });
-      }
-    } else {
+    if (!isOpen) {
       // Reset form when modal closes
       reset({
         title: "",
@@ -82,15 +65,55 @@ export const IssueForm: React.FC<IssueFormProps> = ({
         status: "not-started",
         progress: 0,
       });
+      setFetchError(null);
       return;
     }
-  }, [isOpen, isEditMode, issue, reset]);
+
+    if (isEditMode && issueId) {
+      setIsLoadingIssue(true);
+      setFetchError(null);
+
+      issueApi
+        .getById(issueId)
+        .then((issue) => {
+          reset({
+            title: issue.title,
+            description: issue.description || "",
+            status: issue.status,
+            progress: issue.progress,
+          });
+        })
+        .catch((err) => {
+          setFetchError(err.message || "Failed to load issue");
+          toast.error("Failed to load issue details");
+        })
+        .finally(() => {
+          setIsLoadingIssue(false);
+        });
+    }
+  }, [isOpen, isEditMode, issueId, reset]);
 
   const onSubmit = async (data: CreateIssueFormData) => {
     try {
-      // The actual API call is handled by the parent component
-      // through the onSuccess callback
-      onSuccess();
+      if (isEditMode && issueId) {
+        await issueApi.update(issueId, {
+          title: data.title,
+          description: data.description || undefined,
+          status: data.status,
+          progress: data.progress,
+        });
+        toast.success("Issue updated successfully");
+      } else {
+        await issueApi.create({
+          title: data.title,
+          description: data.description || undefined,
+          status: data.status,
+          progress: data.progress,
+        });
+        toast.success("Issue created successfully");
+      }
+
+      onSuccess(); // Trigger refetch of issues list
       onClose();
     } catch (err) {
       const message =
@@ -121,17 +144,13 @@ export const IssueForm: React.FC<IssueFormProps> = ({
       className="max-w-md"
     >
       <div className="min-h-[420px]">
-        {isLoadingIssue && isEditMode ? (
+        {isLoadingIssue && false ? (
           // Loading skeleton while fetching issue
           <LoadFormModal />
         ) : fetchError ? (
           // Error state
           <div className="flex flex-col items-center justify-center min-h-[420px] text-center">
-            <p className="text-red-500 mb-4">
-              {fetchError instanceof Error
-                ? fetchError.message
-                : String(fetchError)}
-            </p>
+            <p className="text-red-500 mb-4">{fetchError}</p>
             <Button variant="secondary" onClick={onClose}>
               Close
             </Button>
