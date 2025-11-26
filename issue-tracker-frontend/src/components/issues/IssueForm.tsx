@@ -141,128 +141,131 @@ export const IssueForm: React.FC<IssueFormProps> = ({
       isOpen={isOpen}
       onClose={handleClose}
       title={isEditMode ? "Edit Issue" : "Create New Issue"}
+      className="max-w-md"
     >
-      {isLoadingIssue ? (
-        // Loading skeleton while fetching issue
-        <LoadFormModal />
-      ) : fetchError ? (
-        // Error state
-        <div className="text-center py-8">
-          <p className="text-red-500 mb-4">{fetchError}</p>
-          <Button variant="secondary" onClick={onClose}>
-            Close
-          </Button>
-        </div>
-      ) : (
-        // Form
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Title */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Title <span className="text-red-500">*</span>
-            </label>
-            <input
-              {...register("title")}
-              placeholder="Enter issue title"
-              autoFocus
-              className={`w-full px-3 py-2 border rounded-lg transition-colors
+      <div className="min-h-[420px]">
+        {isLoadingIssue && false ? (
+          // Loading skeleton while fetching issue
+          <LoadFormModal />
+        ) : fetchError ? (
+          // Error state
+          <div className="flex flex-col items-center justify-center min-h-[420px] text-center">
+            <p className="text-red-500 mb-4">{fetchError}</p>
+            <Button variant="secondary" onClick={onClose}>
+              Close
+            </Button>
+          </div>
+        ) : (
+          // Form
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Title */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                {...register("title")}
+                placeholder="Enter issue title"
+                autoFocus
+                className={`w-full px-3 py-2 border rounded-lg transition-colors
                 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none
                 ${errors.title ? "border-red-500" : "border-gray-300"}`}
-            />
-            {errors.title && (
-              <p className="mt-1 text-sm text-red-500">
-                {errors.title.message}
-              </p>
-            )}
-          </div>
+              />
+              {errors.title && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.title.message}
+                </p>
+              )}
+            </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              {...register("description")}
-              rows={3}
-              placeholder="Enter issue description (optional)"
-              className={`w-full px-3 py-2 border rounded-lg transition-colors
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <textarea
+                {...register("description")}
+                rows={3}
+                placeholder="Enter issue description (optional)"
+                className={`w-full px-3 py-2 border rounded-lg transition-colors
                 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none
                 ${errors.description ? "border-red-500" : "border-gray-300"}`}
-            />
-            {errors.description && (
-              <p className="mt-1 text-sm text-red-500">
-                {errors.description.message}
-              </p>
-            )}
-          </div>
-
-          {/* Status */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
-            <select
-              {...register("status")}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg
-                focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            >
-              {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Progress */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Progress: {progressValue}%
-            </label>
-            <Controller
-              name="progress"
-              control={control}
-              render={({ field }) => (
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  {...field}
-                  onChange={(e) => field.onChange(parseInt(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                />
+              />
+              {errors.description && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.description.message}
+                </p>
               )}
-            />
-            {errors.progress && (
-              <p className="mt-1 text-sm text-red-500">
-                {errors.progress.message}
-              </p>
-            )}
-          </div>
+            </div>
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleClose}
-              disabled={isSubmitting}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              isLoading={isSubmitting}
-              disabled={!isValid || isSubmitting}
-              className="flex-1"
-            >
-              {isEditMode ? "Update" : "Create"}
-            </Button>
-          </div>
-        </form>
-      )}
+            {/* Status */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
+              <select
+                {...register("status")}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg
+                focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              >
+                {STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Progress */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Progress: {progressValue}%
+              </label>
+              <Controller
+                name="progress"
+                control={control}
+                render={({ field }) => (
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    {...field}
+                    onChange={(e) => field.onChange(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                )}
+              />
+              {errors.progress && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.progress.message}
+                </p>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleClose}
+                disabled={isSubmitting}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                isLoading={isSubmitting}
+                disabled={!isValid || isSubmitting}
+                className="flex-1"
+              >
+                {isEditMode ? "Update" : "Create"}
+              </Button>
+            </div>
+          </form>
+        )}
+      </div>
     </Modal>
   );
 };
