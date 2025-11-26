@@ -39,9 +39,6 @@ const IssuesPage: React.FC = () => {
   // Read issues from Zustand store (no API call)
   const issues = useIssuesStore(selectIssues);
   const isLoading = useIssuesStore(selectIsLoading);
-  // Get mutation functions from React Query (no fetch, only mutations)
-  // const { updateStatus, deleteIssue, isCreating, isUpdating, isDeleting } =
-  //   useIssuesQuery();
   // Get only mutation functions (no additional fetch)
   const { updateStatus, deleteIssue, isCreating, isUpdating, isDeleting } =
     useIssuesMutations();
