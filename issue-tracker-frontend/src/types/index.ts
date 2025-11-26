@@ -12,21 +12,21 @@ export interface Issue {
 
 export interface CreateIssueDTO {
   title: string;
-  description?: string;
-  status?: IssueStatus;
-  progress?: number;
+  description?: string | undefined;
+  status?: IssueStatus | undefined;
+  progress?: number | undefined;
 }
 
 export interface UpdateIssueDTO {
-  title?: string;
-  description?: string;
-  status?: IssueStatus;
-  progress?: number;
+  title?: string | undefined;
+  description?: string | undefined;
+  status?: IssueStatus | undefined;
+  progress?: number | undefined;
 }
 
 export interface IssueFilters {
-  status?: IssueStatus;
-  search?: string;
+  status?: IssueStatus | undefined;
+  search?: string | undefined;
 }
 
 export interface AnalyticsData {
@@ -42,4 +42,5 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   count?: number;
+  error?: string;
 }

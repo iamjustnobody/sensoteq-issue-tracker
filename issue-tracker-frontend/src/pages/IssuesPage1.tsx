@@ -23,7 +23,7 @@ interface IssuesPageProps {
 
 type ViewMode = "card" | "table";
 
-export const IssuesPage: React.FC<IssuesPageProps> = ({
+const IssuesPage: React.FC<IssuesPageProps> = ({
   issues,
   isLoading,
   onCreateIssue,
@@ -140,7 +140,8 @@ export const IssuesPage: React.FC<IssuesPageProps> = ({
 
       {/* Issues display */}
       {viewMode === "card" ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        // Card Layout - 1 col mobile, 2 col tablet, 3 col desktop
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {(["not-started", "in-progress", "completed"] as IssueStatus[]).map(
             (status) => {
               const config = STATUS_CONFIG[status];
@@ -172,6 +173,11 @@ export const IssuesPage: React.FC<IssuesPageProps> = ({
                         onStatusChange={onStatusChange}
                       />
                     ))}
+                    {groupedIssues[status].length === 0 && (
+                      <div className="text-center py-8 text-gray-400 text-sm border-2 border-dashed rounded-xl">
+                        No issues
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -197,3 +203,5 @@ export const IssuesPage: React.FC<IssuesPageProps> = ({
     </div>
   );
 };
+
+export default IssuesPage;

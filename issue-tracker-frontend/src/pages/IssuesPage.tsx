@@ -1,40 +1,23 @@
 import React, { useState, useMemo } from "react";
-import { Search, LayoutGrid, Table, Plus, Loader2 } from "lucide-react";
-import { Button } from "../components/ui";
-import { IssueCard, IssueTable } from "../components/issues";
-import { IssueForm } from "../components/issues/IssueForm";
-import { STATUS_CONFIG } from "../utils/constants";
-import { useDebounce } from "../hooks/useDebounce";
-import type {
-  Issue,
-  IssueStatus,
-  CreateIssueDTO,
-  UpdateIssueDTO,
-} from "../types";
+import { Search, LayoutGrid, Table, Plus } from "lucide-react";
+import toast from "react-hot-toast";
 
-interface IssuesPageProps {
-  issues: Issue[];
-  isLoading: boolean;
-  onCreateIssue: (data: CreateIssueDTO) => Promise<void>;
-  onUpdateIssue: (id: number, data: UpdateIssueDTO) => Promise<void>;
-  onDeleteIssue: (id: number) => Promise<void>;
-  onStatusChange: (id: number, status: IssueStatus) => Promise<void>;
-}
+import { Button, SkeletonCard, SkeletonTable } from "../components/ui/index.js";
+import { IssueCard, IssueTable } from "../components/issues/index.js";
+import { IssueForm } from "../components/issues/IssueForm.js";
+import { STATUS_CONFIG } from "../utils/constants.js";
+import { useIssues, useDebounce } from "../hooks/index.js";
+import type { IssueStatus } from "../types/index.js";
 
 type ViewMode = "card" | "table";
 
-export const IssuesPage: React.FC<IssuesPageProps> = ({
-  issues,
-  isLoading,
-  onCreateIssue,
-  onUpdateIssue,
-  onDeleteIssue,
-  onStatusChange,
-}) => {
+const IssuesPage: React.FC = () => {
+  const { issues, isLoading, updateStatus, deleteIssue, refetch } = useIssues();
+
   const [viewMode, setViewMode] = useState<ViewMode>("card");
   const [searchQuery, setSearchQuery] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingIssue, setEditingIssue] = useState<Issue | null>(null);
+  const [editingIssueId, setEditingIssueId] = useState<number | null>(null);
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -59,34 +42,61 @@ export const IssuesPage: React.FC<IssuesPageProps> = ({
     [filteredIssues]
   );
 
-  const handleOpenForm = (issue?: Issue) => {
-    setEditingIssue(issue || null);
+  const handleOpenCreate = () => {
+    setEditingIssueId(null);
+    setIsFormOpen(true);
+  };
+
+  const handleOpenEdit = (id: number) => {
+    setEditingIssueId(id);
     setIsFormOpen(true);
   };
 
   const handleCloseForm = () => {
     setIsFormOpen(false);
-    setEditingIssue(null);
+    setEditingIssueId(null);
   };
 
-  const handleSubmit = async (data: CreateIssueDTO | UpdateIssueDTO) => {
-    if (editingIssue) {
-      await onUpdateIssue(editingIssue.id, data);
-    } else {
-      await onCreateIssue(data as CreateIssueDTO);
-    }
+  const handleFormSuccess = () => {
+    refetch(); // Refetch issues after create/update
   };
 
   const handleDelete = async (id: number) => {
     if (window.confirm("Are you sure you want to delete this issue?")) {
-      await onDeleteIssue(id);
+      try {
+        await deleteIssue(id);
+      } catch {
+        // Error already handled in hook with toast
+      }
     }
   };
 
+  // Loading skeleton
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      <div>
+        {/* Toolbar skeleton */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex-1 h-11 bg-gray-200 animate-pulse rounded-xl" />
+          <div className="flex gap-2">
+            <div className="h-11 w-24 bg-gray-200 animate-pulse rounded-lg" />
+            <div className="h-11 w-32 bg-gray-200 animate-pulse rounded-xl" />
+          </div>
+        </div>
+
+        {viewMode === "card" ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {[0, 1, 2].map((col) => (
+              <div key={col} className="space-y-4">
+                <div className="h-10 bg-gray-200 animate-pulse rounded-lg" />
+                <SkeletonCard />
+                <SkeletonCard />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <SkeletonTable rows={6} />
+        )}
       </div>
     );
   }
@@ -95,7 +105,6 @@ export const IssuesPage: React.FC<IssuesPageProps> = ({
     <div>
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        {/* Search */}
         <div className="relative flex-1">
           <Search
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -110,7 +119,6 @@ export const IssuesPage: React.FC<IssuesPageProps> = ({
           />
         </div>
 
-        {/* View toggle & Add button */}
         <div className="flex gap-2">
           <div className="flex bg-gray-100 rounded-lg p-1">
             <button
@@ -131,7 +139,7 @@ export const IssuesPage: React.FC<IssuesPageProps> = ({
             </button>
           </div>
 
-          <Button onClick={() => handleOpenForm()}>
+          <Button onClick={handleOpenCreate}>
             <Plus size={18} className="mr-2" />
             <span className="hidden sm:inline">Add Issue</span>
           </Button>
@@ -140,7 +148,6 @@ export const IssuesPage: React.FC<IssuesPageProps> = ({
 
       {/* Issues display */}
       {viewMode === "card" ? (
-        // Card Layout - 1 col mobile, 2 col tablet, 3 col desktop
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {(["not-started", "in-progress", "completed"] as IssueStatus[]).map(
             (status) => {
@@ -149,7 +156,6 @@ export const IssuesPage: React.FC<IssuesPageProps> = ({
 
               return (
                 <div key={status} className="space-y-4">
-                  {/* Column header */}
                   <div
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg ${config.bg}`}
                   >
@@ -162,15 +168,14 @@ export const IssuesPage: React.FC<IssuesPageProps> = ({
                     </span>
                   </div>
 
-                  {/* Cards */}
                   <div className="space-y-3">
                     {groupedIssues[status].map((issue) => (
                       <IssueCard
                         key={issue.id}
                         issue={issue}
-                        onEdit={handleOpenForm}
-                        onDelete={handleDelete}
-                        onStatusChange={onStatusChange}
+                        onEdit={() => handleOpenEdit(issue.id)}
+                        onDelete={() => handleDelete(issue.id)}
+                        onStatusChange={updateStatus}
                       />
                     ))}
                     {groupedIssues[status].length === 0 && (
@@ -187,9 +192,9 @@ export const IssuesPage: React.FC<IssuesPageProps> = ({
       ) : (
         <IssueTable
           issues={filteredIssues}
-          onEdit={handleOpenForm}
+          onEdit={(issue) => handleOpenEdit(issue.id)}
           onDelete={handleDelete}
-          onStatusChange={onStatusChange}
+          onStatusChange={updateStatus}
         />
       )}
 
@@ -197,9 +202,11 @@ export const IssuesPage: React.FC<IssuesPageProps> = ({
       <IssueForm
         isOpen={isFormOpen}
         onClose={handleCloseForm}
-        onSubmit={handleSubmit}
-        issue={editingIssue}
+        onSuccess={handleFormSuccess}
+        issueId={editingIssueId}
       />
     </div>
   );
 };
+
+export default IssuesPage;

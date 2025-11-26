@@ -1,7 +1,8 @@
 import axios from "axios";
+import { API_BASE_URL } from "../config";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3001/api",
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -11,7 +12,7 @@ const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
-    // You can add auth token here
+    // Add auth token here if needed
     // const token = localStorage.getItem('token');
     // if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
@@ -26,7 +27,7 @@ api.interceptors.response.use(
     const message =
       error.response?.data?.error || error.message || "Something went wrong";
     console.error("API Error:", message);
-    return Promise.reject(error);
+    return Promise.reject(error ?? new Error(message));
   }
 );
 

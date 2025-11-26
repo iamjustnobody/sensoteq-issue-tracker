@@ -1,79 +1,88 @@
-// import './App.css'
-import React, { useState, useMemo } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { Sidebar, Header } from "./components/layout";
-import { IssuesPage } from "./pages/IssuesPage";
-import { AnalyticsPage } from "./pages/AnalyticsPage";
-import { useIssues } from "./hooks/useIssues";
+import React, { Suspense } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
-const AppContent: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const location = useLocation();
+import { Layout } from "./components/layout/index.js";
+import { Toaster } from "./components/ui/index.js";
+import {
+  ROUTES,
+  IssuesPage,
+  AnalyticsPage,
+  NotFoundPage,
+} from "./config/routes.js";
 
-  const {
-    issues,
-    isLoading,
-    createIssue,
-    updateIssue,
-    deleteIssue,
-    updateStatus,
-  } = useIssues();
-
-  // Calculate stats for sidebar
-  const stats = useMemo(() => {
-    const total = issues.length;
-    const completed = issues.filter((i) => i.status === "completed").length;
-    const completionRate =
-      total > 0 ? Math.round((completed / total) * 100) : 0;
-    return { total, completionRate };
-  }, [issues]);
-
-  // Get page title from route
-  const pageTitle = location.pathname === "/analytics" ? "Analytics" : "Issues";
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        totalIssues={stats.total}
-        completionRate={stats.completionRate}
-      />
-
-      {/* Main content */}
-      <div className="lg:ml-64">
-        {/* Header */}
-        <Header title={pageTitle} onMenuClick={() => setSidebarOpen(true)} />
-
-        {/* Page content */}
-        <main className="p-4 lg:p-6">
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <IssuesPage
-                  issues={issues}
-                  isLoading={isLoading}
-                  onCreateIssue={createIssue}
-                  onUpdateIssue={updateIssue}
-                  onDeleteIssue={deleteIssue}
-                  onStatusChange={updateStatus}
-                />
-              }
-            />
-            <Route path="/analytics" element={<AnalyticsPage />} />
-          </Routes>
-        </main>
-      </div>
+// Root loading fallback
+const RootLoader: React.FC = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="text-center">
+      <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto mb-4" />
+      <p className="text-gray-500">Loading...</p>
     </div>
-  );
-};
+  </div>
+);
+
+// Error boundary fallback
+const ErrorFallback: React.FC = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="text-center">
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        Something went wrong
+      </h1>
+      <p className="text-gray-500 mb-4">
+        Please refresh the page and try again.
+      </p>
+      <button
+        onClick={() => window.location.reload()}
+        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+      >
+        Refresh Page
+      </button>
+    </div>
+  </div>
+);
 
 const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <AppContent />
+      {/* Toast notifications */}
+      <Toaster />
+
+      <Suspense fallback={<RootLoader />}>
+        <Routes>
+          {/* Routes with layout */}
+          <Route element={<Layout />}>
+            {/* Default route */}
+            <Route
+              index
+              element={
+                <Suspense fallback={<RootLoader />}>
+                  <IssuesPage />
+                </Suspense>
+              }
+            />
+
+            {/* Analytics route */}
+            <Route
+              path={ROUTES.ANALYTICS}
+              element={
+                <Suspense fallback={<RootLoader />}>
+                  <AnalyticsPage />
+                </Suspense>
+              }
+            />
+          </Route>
+
+          {/* 404 route - outside layout */}
+          <Route
+            path="*"
+            element={
+              <Suspense fallback={<RootLoader />}>
+                <NotFoundPage />
+              </Suspense>
+            }
+          />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 };

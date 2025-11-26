@@ -1,7 +1,8 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { X, Home, BarChart3, ChevronRight } from "lucide-react";
-import { cn } from "../../utils/cn";
+import { X, ChevronRight } from "lucide-react";
+import { cn } from "../../utils/cn.js";
+import { NAV_ITEMS } from "../../config/routes.js";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -16,14 +17,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   totalIssues,
   completionRate,
 }) => {
-  const navItems = [
-    { to: "/", icon: Home, label: "Issues" },
-    { to: "/analytics", icon: BarChart3, label: "Analytics" },
-  ];
-
   return (
     <>
-      {/* Backdrop for mobile */}
+      {/* Backdrop */}
       <div
         className={cn(
           "fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity",
@@ -51,9 +47,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation - using centralized NAV_ITEMS */}
         <nav className="p-4 space-y-2">
-          {navItems.map(({ to, icon: Icon, label }) => (
+          {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
