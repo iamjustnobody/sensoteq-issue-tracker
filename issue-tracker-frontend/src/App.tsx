@@ -10,6 +10,7 @@ import {
   AnalyticsPage,
   NotFoundPage,
 } from "./config/routes.js";
+import { useGlobalIssuesLoader } from "./hooks/useGlobalIssuesLoader.js";
 
 // Root loading fallback
 const RootLoader: React.FC = () => (
@@ -22,24 +23,82 @@ const RootLoader: React.FC = () => (
 );
 
 // Error boundary fallback
-// const ErrorFallback: React.FC = () => (
-//   <div className="min-h-screen flex items-center justify-center bg-gray-50">
-//     <div className="text-center">
-//       <h1 className="text-2xl font-bold text-gray-900 mb-2">
-//         Something went wrong
-//       </h1>
-//       <p className="text-gray-500 mb-4">
-//         Please refresh the page and try again.
-//       </p>
-//       <button
-//         onClick={() => window.location.reload()}
-//         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-//       >
-//         Refresh Page
-//       </button>
-//     </div>
-//   </div>
-// );
+const ErrorFallback: React.FC<{ error?: string }> = ({ error }) => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="text-center">
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">
+        Something went wrong
+      </h1>
+      <p className="text-gray-500 mb-4">
+        {error ?? "Please refresh the page and try again."}
+      </p>
+      <button
+        onClick={() => window.location.reload()}
+        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+      >
+        Refresh Page
+      </button>
+    </div>
+  </div>
+);
+
+// Inner app component that uses the global loader
+const AppContent: React.FC = () => {
+  // Load issues once at the app level
+  // This will sync with Zustand store and prevent duplicate fetches
+  const { isLoading, error } = useGlobalIssuesLoader();
+
+  // Show initial loading state
+  if (isLoading) {
+    return <RootLoader />;
+  }
+
+  // Show error state if initial load fails
+  if (error) {
+    return (
+      <ErrorFallback //error={error instanceof Error ? error.message : String(error)}
+        error={error}
+      />
+    );
+  }
+
+  return (
+    <Routes>
+      {/* Routes with layout */}
+      <Route element={<Layout />}>
+        {/* Default route */}
+        <Route
+          index
+          element={
+            <Suspense fallback={<RootLoader />}>
+              <IssuesPage />
+            </Suspense>
+          }
+        />
+
+        {/* Analytics route */}
+        <Route
+          path={ROUTES.ANALYTICS}
+          element={
+            <Suspense fallback={<RootLoader />}>
+              <AnalyticsPage />
+            </Suspense>
+          }
+        />
+      </Route>
+
+      {/* 404 route - outside layout */}
+      <Route
+        path="*"
+        element={
+          <Suspense fallback={<RootLoader />}>
+            <NotFoundPage />
+          </Suspense>
+        }
+      />
+    </Routes>
+  );
+};
 
 const App: React.FC = () => {
   return (
@@ -48,40 +107,7 @@ const App: React.FC = () => {
       <Toaster />
 
       <Suspense fallback={<RootLoader />}>
-        <Routes>
-          {/* Routes with layout */}
-          <Route element={<Layout />}>
-            {/* Default route */}
-            <Route
-              index
-              element={
-                <Suspense fallback={<RootLoader />}>
-                  <IssuesPage />
-                </Suspense>
-              }
-            />
-
-            {/* Analytics route */}
-            <Route
-              path={ROUTES.ANALYTICS}
-              element={
-                <Suspense fallback={<RootLoader />}>
-                  <AnalyticsPage />
-                </Suspense>
-              }
-            />
-          </Route>
-
-          {/* 404 route - outside layout */}
-          <Route
-            path="*"
-            element={
-              <Suspense fallback={<RootLoader />}>
-                <NotFoundPage />
-              </Suspense>
-            }
-          />
-        </Routes>
+        <AppContent />
       </Suspense>
     </BrowserRouter>
   );

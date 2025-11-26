@@ -7,8 +7,13 @@ import { IssueForm } from "../components/issues/IssueForm.js";
 import { STATUS_CONFIG } from "../utils/constants.js";
 import { useDebounce } from "../hooks/index.js";
 import type { IssueStatus } from "../types/index.js";
-import { useIssuesQuery } from "../hooks/useIssueQuery.js";
+import { useIssuesMutations } from "../hooks/useIssueQuery.js";
 import { VirtualizedIssueTable } from "../components/issues/VirtualizedIssueTable.js";
+import {
+  selectIsLoading,
+  selectIssues,
+  useIssuesStore,
+} from "../stores/useIssuesStore.js";
 
 type ViewMode = "card" | "table" | "virtual";
 
@@ -20,17 +25,26 @@ const IssuesPage: React.FC = () => {
 
   const debouncedSearch = useDebounce(searchQuery, 300);
 
-  const {
-    issues,
-    isLoading,
+  // const {
+  //   issues,
+  //   isLoading,
+  //   updateStatus,
+  //   deleteIssue,
+  //   refetch,
+  //   isCreating,
+  //   isUpdating,
+  //   isDeleting,
+  // } = useIssuesQuery({ search: debouncedSearch });
 
-    updateStatus,
-    deleteIssue,
-    refetch,
-    isCreating,
-    isUpdating,
-    isDeleting,
-  } = useIssuesQuery({ search: debouncedSearch });
+  // Read issues from Zustand store (no API call)
+  const issues = useIssuesStore(selectIssues);
+  const isLoading = useIssuesStore(selectIsLoading);
+  // Get mutation functions from React Query (no fetch, only mutations)
+  // const { updateStatus, deleteIssue, isCreating, isUpdating, isDeleting } =
+  //   useIssuesQuery();
+  // Get only mutation functions (no additional fetch)
+  const { updateStatus, deleteIssue, isCreating, isUpdating, isDeleting } =
+    useIssuesMutations();
 
   // Filter issues based on search
   const filteredIssues = useMemo(() => {
@@ -69,7 +83,8 @@ const IssuesPage: React.FC = () => {
   };
 
   const handleFormSuccess = () => {
-    refetch(); // Refetch issues after create/update
+    // refetch(); // Refetch issues after create/update
+    // No need to refetch - Zustand store is automatically updated by the mutation
   };
 
   const handleDelete = async (id: number) => {
@@ -232,6 +247,33 @@ const IssuesPage: React.FC = () => {
           onDelete={handleDelete}
           onStatusChange={updateStatus}
         />
+      )}
+
+      {/* Empty state */}
+      {issues.length === 0 && !isLoading && (
+        <div className="text-center py-12">
+          <p className="text-gray-500 mb-4">No issues yet</p>
+          <Button onClick={handleOpenCreate}>
+            <Plus size={18} className="mr-2" />
+            Create your first issue
+          </Button>
+        </div>
+      )}
+      {/* No search results */}
+      {issues.length > 0 && filteredIssues.length === 0 && debouncedSearch && (
+        <div className="text-center py-16">
+          <Search size={48} className="text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No matching issues
+          </h3>
+          <p className="text-gray-500 mb-4">Try adjusting your search terms</p>
+          <button
+            onClick={() => setSearchQuery("")}
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+          >
+            Clear search
+          </button>
+        </div>
       )}
 
       {/* Issue form modal */}

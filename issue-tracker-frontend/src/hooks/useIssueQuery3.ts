@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { issueApi, ApiError } from "../services/api-fetch";
 import { queryKeys } from "../lib/queryClient";
-
 import toast from "react-hot-toast";
 import type {
   Issue,
@@ -11,9 +10,10 @@ import type {
   IssueStatus,
 } from "../types";
 import { useIssuesStore } from "../stores/useIssuesStore";
+import { useEffect } from "react";
 
 /**
- * React Query hook for managing issues with Zustand store sync
+ * React Query hook for managing issues with optimistic updates & Zustand store sync
  *
  * @param filters - Optional filters for fetching issues. If not provided, hook only provides mutations
  * @param options - Optional configuration
@@ -25,67 +25,63 @@ export function useIssuesQuery(
 ) {
   const queryClient = useQueryClient();
 
+  // Determine if we should fetch
+  // Skip fetch if explicitly requested OR if no filters provided (mutation-only mode)
   const shouldFetch = !options?.skipFetch;
 
   // ============================================
   // QUERY: Fetch all issues
   // ============================================
-  const query = useQuery({
+  const {
+    data: issues = [],
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: queryKeys.issues.list(filters),
-    queryFn: async () => {
-      // Set loading state at start of fetch
-      useIssuesStore.getState().setLoading(true);
-
-      try {
-        // Fetch data
-        const data = await issueApi.getAll(filters);
-
-        // Sync to Zustand store immediately after successful fetch
-        useIssuesStore.getState().setIssues(data);
-        useIssuesStore.getState().setLoading(false);
-        useIssuesStore.getState().setError(null);
-
-        return data;
-      } catch (err) {
-        // Handle error
-        useIssuesStore.getState().setLoading(false);
-        useIssuesStore
-          .getState()
-          .setError(
-            err instanceof ApiError
-              ? err.message
-              : err?.toString() || "Failed to fetch issues"
-          );
-        throw err;
-      }
-    },
-    enabled: shouldFetch,
-    staleTime: 30 * 1000,
+    queryFn: () => issueApi.getAll(filters),
+    enabled: shouldFetch, // Only fetch if not skipped
+    staleTime: 30 * 1000, // Consider data fresh for 30 seconds
     retry: (failureCount, error) => {
+      // Don't retry on client errors (4xx)
       if (error instanceof ApiError && error.isClientError()) {
         return false;
       }
+      // Retry up to 2 times for network errors
       return failureCount < 2;
     },
   });
 
-  const { data: issues = [], isLoading, error, refetch } = query;
-
+  // ============================================
+  // SYNC: Update Zustand store when data changes
+  // ============================================
+  // Zustand store actions
+  // const { setIssues, setLoading, setError } = useIssuesStore();
+  // useEffect(() => {
+  //   if (!shouldFetch) return;
+  //   setIssues(issues);
+  //   setLoading(isLoading);
+  //   setError(
+  //     error instanceof ApiError ? error.message : error?.toString() || null
+  //   );
+  // }, [issues, isLoading, error, setIssues, setLoading, setError, shouldFetch]);
   // ============================================
   // MUTATION: Create issue
   // ============================================
   const createMutation = useMutation({
     mutationFn: (data: CreateIssueDTO) => issueApi.create(data),
     onMutate: async (newIssue) => {
+      // Cancel outgoing refetches to prevent overwriting optimistic update
       await queryClient.cancelQueries({ queryKey: queryKeys.issues.lists() });
 
+      // Snapshot previous value for rollback
       const previousIssues = queryClient.getQueryData<Issue[]>(
         queryKeys.issues.list(filters)
       );
 
-      // Optimistically update cache
+      // Optimistically update with temporary issue
       const tempIssue: Issue = {
-        id: Date.now(),
+        id: Date.now(), //Temporary ID
         ...newIssue,
         status: newIssue.status || "not-started",
         progress: newIssue.progress || 0,
@@ -96,7 +92,7 @@ export function useIssuesQuery(
 
       queryClient.setQueryData<Issue[]>(
         queryKeys.issues.list(filters),
-        (old = []) => [tempIssue, ...old]
+        (old = []) => [tempIssue as Issue, ...old]
       );
 
       // Update Zustand store optimistically
@@ -105,15 +101,18 @@ export function useIssuesQuery(
       return { previousIssues };
     },
     onError: (error, _newIssue, context) => {
+      // Rollback on error
       if (context?.previousIssues) {
         queryClient.setQueryData(
           queryKeys.issues.list(filters),
           context.previousIssues
         );
+
         // Restore Zustand store
         useIssuesStore.getState().setIssues(context.previousIssues);
       }
 
+      // Show user-friendly error message
       const message =
         error instanceof ApiError ? error.message : "Failed to create issue";
       toast.error(message);
@@ -122,6 +121,7 @@ export function useIssuesQuery(
       toast.success("Issue created successfully");
     },
     onSettled: () => {
+      // Always refetch to sync with server
       queryClient.invalidateQueries({ queryKey: queryKeys.issues.lists() });
       queryClient.invalidateQueries({ queryKey: queryKeys.analytics.all() });
     },
@@ -162,6 +162,7 @@ export function useIssuesQuery(
           queryKeys.issues.list(filters),
           context.previousIssues
         );
+
         // Restore Zustand store
         useIssuesStore.getState().setIssues(context.previousIssues);
       }
@@ -208,6 +209,7 @@ export function useIssuesQuery(
           queryKeys.issues.list(filters),
           context.previousIssues
         );
+
         // Restore Zustand store
         useIssuesStore.getState().setIssues(context.previousIssues);
       }
@@ -259,6 +261,7 @@ export function useIssuesQuery(
     deleteIssue,
     updateStatus,
     refetch,
+    // Expose mutation states for advanced usage
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
@@ -267,7 +270,7 @@ export function useIssuesQuery(
 
 /**
  * Hook specifically for mutations only (no fetching)
- * Only when need create/update/delete and read from Zustand store
+ * Use this when only needing create/update/delete and read from Zustand store
  */
 export function useIssuesMutations() {
   return useIssuesQuery(undefined, { skipFetch: true });
@@ -280,9 +283,10 @@ export function useIssueQuery(id: number | null | undefined) {
   return useQuery({
     queryKey: queryKeys.issues.detail(id!),
     queryFn: () => issueApi.getById(id!),
-    enabled: id != null,
-    staleTime: 5 * 60 * 1000,
+    enabled: id != null, // Only fetch if ID is provided
+    staleTime: 5 * 60 * 1000, // 5 minutes
     retry: (failureCount, error) => {
+      // Don't retry if issue not found
       if (error instanceof ApiError && error.isNotFound()) {
         return false;
       }

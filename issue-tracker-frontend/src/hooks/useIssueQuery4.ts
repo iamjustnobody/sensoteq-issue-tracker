@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { issueApi, ApiError } from "../services/api-fetch";
 import { queryKeys } from "../lib/queryClient";
-
 import toast from "react-hot-toast";
 import type {
   Issue,
@@ -25,40 +25,28 @@ export function useIssuesQuery(
 ) {
   const queryClient = useQueryClient();
 
+  // Zustand store actions
+  const { setIssues, setLoading, setError } = useIssuesStore();
+
+  // Track if we've done initial sync to prevent loops
+  const hasSyncedRef = useRef(false);
+  const lastDataRef = useRef<Issue[]>([]);
+
+  // Determine if we should fetch
   const shouldFetch = !options?.skipFetch;
 
   // ============================================
   // QUERY: Fetch all issues
   // ============================================
-  const query = useQuery({
+  const {
+    data: issues = [],
+    isLoading,
+    error,
+    refetch,
+    dataUpdatedAt,
+  } = useQuery({
     queryKey: queryKeys.issues.list(filters),
-    queryFn: async () => {
-      // Set loading state at start of fetch
-      useIssuesStore.getState().setLoading(true);
-
-      try {
-        // Fetch data
-        const data = await issueApi.getAll(filters);
-
-        // Sync to Zustand store immediately after successful fetch
-        useIssuesStore.getState().setIssues(data);
-        useIssuesStore.getState().setLoading(false);
-        useIssuesStore.getState().setError(null);
-
-        return data;
-      } catch (err) {
-        // Handle error
-        useIssuesStore.getState().setLoading(false);
-        useIssuesStore
-          .getState()
-          .setError(
-            err instanceof ApiError
-              ? err.message
-              : err?.toString() || "Failed to fetch issues"
-          );
-        throw err;
-      }
-    },
+    queryFn: () => issueApi.getAll(filters),
     enabled: shouldFetch,
     staleTime: 30 * 1000,
     retry: (failureCount, error) => {
@@ -69,7 +57,29 @@ export function useIssuesQuery(
     },
   });
 
-  const { data: issues = [], isLoading, error, refetch } = query;
+  // ============================================
+  // SYNC: Update Zustand store when data changes
+  // Only sync when data actually changes (not on every render)
+  // ============================================
+  useEffect(() => {
+    if (!shouldFetch) return;
+
+    // Only sync if data timestamp changed or if it's the first sync
+    const dataChanged =
+      dataUpdatedAt > 0 &&
+      (lastDataRef.current !== issues || !hasSyncedRef.current);
+
+    if (dataChanged) {
+      setIssues(issues);
+      setLoading(isLoading);
+      setError(
+        error instanceof ApiError ? error.message : error?.toString() || null
+      );
+
+      lastDataRef.current = issues;
+      hasSyncedRef.current = true;
+    }
+  }, [dataUpdatedAt, isLoading, error, shouldFetch]); // Remove 'issues' from deps
 
   // ============================================
   // MUTATION: Create issue
@@ -267,7 +277,7 @@ export function useIssuesQuery(
 
 /**
  * Hook specifically for mutations only (no fetching)
- * Only when need create/update/delete and read from Zustand store
+ * Use this when only need create/update/delete and read from Zustand store
  */
 export function useIssuesMutations() {
   return useIssuesQuery(undefined, { skipFetch: true });

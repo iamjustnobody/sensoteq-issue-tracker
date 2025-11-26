@@ -15,11 +15,18 @@ import {
 } from "../components/analytics/index.js";
 
 import { useAnalyticsQuery } from "../hooks/useAnalyticQuery.js";
-import { useIssuesQuery } from "../hooks/useIssueQuery.js";
+import {
+  selectIsLoading,
+  selectIssues,
+  useIssuesStore,
+} from "../stores/useIssuesStore.js";
 
 const AnalyticsPage: React.FC = () => {
   const { data: analytics, isLoading: analyticsLoading } = useAnalyticsQuery();
-  const { issues, isLoading: issuesLoading } = useIssuesQuery();
+  // const { issues, isLoading: issuesLoading } = useIssuesQuery();
+  // Get issues from Zustand store instead of fetching again
+  const issues = useIssuesStore(selectIssues);
+  const issuesLoading = useIssuesStore(selectIsLoading);
 
   const isLoading = analyticsLoading || issuesLoading;
 

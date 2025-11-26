@@ -5,7 +5,12 @@ import { Loader2 } from "lucide-react";
 import { Sidebar } from "./Sidebar.js";
 import { Header } from "./Header.js";
 import { NAV_ITEMS } from "../../config/routes.js";
-import { useIssuesQuery } from "../../hooks/useIssueQuery.js";
+// import { useIssuesQuery } from "../../hooks/useIssueQuery.js";
+import {
+  selectCompletionRate,
+  selectTotalIssues,
+  useIssuesStore,
+} from "../../stores/useIssuesStore.js";
 
 // Page loading fallback
 const PageLoader: React.FC = () => (
@@ -17,13 +22,10 @@ const PageLoader: React.FC = () => (
 export const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { issues } = useIssuesQuery();
-
-  // Calculate stats for sidebar
-  const totalIssues = issues.length;
-  const completed = issues.filter((i) => i.status === "completed").length;
-  const completionRate =
-    totalIssues > 0 ? Math.round((completed / totalIssues) * 100) : 0;
+  // const { data: issues } = useIssuesQuery();
+  // Get stats from Zustand store instead of fetching
+  const totalIssues = useIssuesStore(selectTotalIssues);
+  const completionRate = useIssuesStore(selectCompletionRate);
 
   // Get page title from nav items
   const currentNav = NAV_ITEMS.find((item) => item.to === location.pathname);
