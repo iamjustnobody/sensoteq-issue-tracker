@@ -13,15 +13,22 @@ import {
   StatusChart,
   ProgressChart,
 } from "../components/analytics/index.js";
-import { useAnalytics, useIssues } from "../hooks/index.js";
+import {
+  useAnalytics,
+  useAnalytics_custom,
+  useIssues,
+  useIssues_custom,
+} from "../hooks/index.js";
 import { useAnalyticsQuery } from "../hooks/useAnalyticQuery.js";
 import { useIssuesQuery } from "../hooks/useIssueQuery.js";
 
 const AnalyticsPage: React.FC = () => {
-  // const { data: analytics, isLoading: analyticsLoading } = useAnalytics();
-  // const { issues, isLoading: issuesLoading } = useIssues();
-  const { data: analytics, isLoading: analyticsLoading } = useAnalyticsQuery();
-  const { issues, isLoading: issuesLoading } = useIssuesQuery();
+  // const { data: analytics, isLoading: analyticsLoading } = useAnalytics_custom();
+  // const { issues, isLoading: issuesLoading } = useIssues_custom();
+  // const { data: analytics, isLoading: analyticsLoading } = useAnalyticsQuery();
+  // const { issues, isLoading: issuesLoading } = useIssuesQuery();
+  const { data: analytics, isLoading: analyticsLoading } = useAnalytics();
+  const { issues, isLoading: issuesLoading } = useIssues();
 
   const isLoading = analyticsLoading || issuesLoading;
 

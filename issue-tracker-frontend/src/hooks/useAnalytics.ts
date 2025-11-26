@@ -1,44 +1,22 @@
-import { useState, useEffect } from "react";
-import { analyticsApi } from "../services/api";
-import type { AnalyticsData } from "../types";
-import toast from "react-hot-toast";
+import { useEffect } from "react";
+import { useAnalyticsStore } from "../stores/useAnalyticsStore";
 
-interface UseAnalyticsReturn {
-  data: AnalyticsData | null;
-  isLoading: boolean;
-  error: string | null;
-  refetch: () => Promise<void>;
-}
+export function useAnalytics() {
+  const data = useAnalyticsStore((state) => state.data);
+  const isLoading = useAnalyticsStore((state) => state.isLoading);
+  const error = useAnalyticsStore((state) => state.error);
+  const fetchAnalytics = useAnalyticsStore((state) => state.fetchAnalytics);
+  const refetch = useAnalyticsStore((state) => state.refetch);
 
-export function useAnalytics(): UseAnalyticsReturn {
-  const [data, setData] = useState<AnalyticsData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchAnalytics = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const analytics = await analyticsApi.getData();
-      setData(analytics);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to fetch analytics";
-      setError(message);
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Auto-fetch on mount
   useEffect(() => {
     fetchAnalytics();
-  }, []);
+  }, [fetchAnalytics]);
 
   return {
     data,
     isLoading,
     error,
-    refetch: fetchAnalytics,
+    refetch,
   };
 }

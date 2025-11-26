@@ -6,16 +6,18 @@ import { Button, SkeletonCard, SkeletonTable } from "../components/ui/index.js";
 import { IssueCard, IssueTable } from "../components/issues/index.js";
 import { IssueForm } from "../components/issues/IssueForm.js";
 import { STATUS_CONFIG } from "../utils/constants.js";
-import { useIssues, useDebounce } from "../hooks/index.js";
+import { useIssues, useDebounce, useIssues_custom } from "../hooks/index.js";
 import type { IssueStatus } from "../types/index.js";
 import { useIssuesQuery } from "../hooks/useIssueQuery.js";
 
 type ViewMode = "card" | "table";
 
 const IssuesPage: React.FC = () => {
-  // const { issues, isLoading, updateStatus, deleteIssue, refetch } = useIssues();
-  const { issues, isLoading, updateStatus, deleteIssue, refetch } =
-    useIssuesQuery();
+  // const { issues, isLoading, updateStatus, deleteIssue, refetch } =
+  //   useIssues_custom();
+  // const { issues, isLoading, updateStatus, deleteIssue, refetch } =
+  //   useIssuesQuery();
+  const { issues, isLoading, updateStatus, deleteIssue, refetch } = useIssues();
 
   const [viewMode, setViewMode] = useState<ViewMode>("card");
   const [searchQuery, setSearchQuery] = useState("");
