@@ -10,6 +10,7 @@ interface IssueTableProps {
   onEdit: (issue: Issue) => void;
   onDelete: (id: number) => void;
   onStatusChange: (id: number, status: IssueStatus) => void;
+  submitting?: boolean;
 }
 
 type SortField =

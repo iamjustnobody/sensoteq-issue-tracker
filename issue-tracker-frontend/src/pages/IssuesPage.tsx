@@ -6,7 +6,11 @@ import { IssueCard, IssueTable } from "../components/issues/index.js";
 import { IssueForm } from "../components/issues/IssueForm.js";
 import { STATUS_CONFIG } from "../utils/constants.js";
 import { useDebounce } from "../hooks/index.js";
-import type { IssueStatus } from "../types/index.js";
+import type {
+  CreateIssueDTO,
+  IssueStatus,
+  UpdateIssueDTO,
+} from "../types/index.js";
 import { useIssuesMutations } from "../hooks/useIssueQuery.js";
 import { VirtualizedIssueTable } from "../components/issues/VirtualizedIssueTable.js";
 import {
@@ -14,6 +18,10 @@ import {
   selectIssues,
   useIssuesStore,
 } from "../stores/useIssuesStore.js";
+import type {
+  CreateIssueFormData,
+  UpdateIssueFormData,
+} from "../schemas/issue.schema.js";
 
 type ViewMode = "card" | "table" | "virtual";
 
@@ -40,8 +48,15 @@ const IssuesPage: React.FC = () => {
   const issues = useIssuesStore(selectIssues);
   const isLoading = useIssuesStore(selectIsLoading);
   // Get only mutation functions (no additional fetch)
-  const { updateStatus, deleteIssue, isCreating, isUpdating, isDeleting } =
-    useIssuesMutations();
+  const {
+    createIssue,
+    updateIssue,
+    deleteIssue,
+    updateStatus,
+    isCreating,
+    isUpdating,
+    isDeleting,
+  } = useIssuesMutations();
 
   // Filter issues based on search
   const filteredIssues = useMemo(() => {
@@ -84,15 +99,63 @@ const IssuesPage: React.FC = () => {
     // No need to refetch - Zustand store is automatically updated by the mutation
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm("Are you sure you want to delete this issue?")) {
-      try {
-        await deleteIssue(id);
-      } catch {
-        // Error already handled in hook with toast
+  // ==============================================
+  // API CALL HANDLERS - Called from IssueForm
+  // ==============================================
+  const handleFormSubmit = async (
+    data: CreateIssueFormData | UpdateIssueFormData
+  ) => {
+    try {
+      if (editingIssueId) {
+        // Update existing issue
+        await updateIssue(
+          editingIssueId,
+          data as UpdateIssueFormData | UpdateIssueDTO
+        );
+        // toast.success("Issue updated successfully");
+        handleFormSuccess(); //opt
+      } else {
+        // Create new issue
+        await createIssue(data as CreateIssueFormData | CreateIssueDTO);
+        // toast.success("Issue created successfully");
       }
+
+      // Close modal on success
+      handleCloseForm(); //opt
+    } catch (err) {
+      // const message = err instanceof Error ? err.message : "Something went wrong";
+      // toast.error(message);
+      // error handling is done in the mutation hooks
+      // Don't close modal on error - let user retry
     }
   };
+
+  // ==============================================
+  // ISSUE ACTION HANDLERS
+  // ==============================================
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this issue?")) {
+      return;
+    }
+
+    try {
+      await deleteIssue(id);
+      // toast.success("Issue deleted successfully");
+    } catch (err) {
+      // const message = err instanceof Error ? err.message : "Failed to delete issue";
+      // toast.error(message);
+      // error handling is done in the mutation hooks
+    }
+  };
+
+  // const handleStatusChange = async (id: number, status: string) => {
+  //   try {
+  //     await updateStatus(id, status as any);
+  //   } catch (err) {
+  //     const message = err instanceof Error ? err.message : "Failed to update status";
+  //     toast.error(message);
+  //   }
+  // };
 
   // Loading skeleton
   if (isLoading) {
@@ -217,6 +280,7 @@ const IssuesPage: React.FC = () => {
                         onEdit={() => handleOpenEdit(issue.id)}
                         onDelete={() => handleDelete(issue.id)}
                         onStatusChange={updateStatus}
+                        submitting={isCreating || isUpdating}
                       />
                     ))}
                     {groupedIssues[status].length === 0 && (
@@ -236,6 +300,7 @@ const IssuesPage: React.FC = () => {
           onEdit={(issue) => handleOpenEdit(issue.id)}
           onDelete={handleDelete}
           onStatusChange={updateStatus}
+          submitting={isCreating || isUpdating}
         />
       ) : (
         <IssueTable
@@ -243,6 +308,7 @@ const IssuesPage: React.FC = () => {
           onEdit={(issue) => handleOpenEdit(issue.id)}
           onDelete={handleDelete}
           onStatusChange={updateStatus}
+          submitting={isCreating || isUpdating}
         />
       )}
 
@@ -277,8 +343,9 @@ const IssuesPage: React.FC = () => {
       <IssueForm
         isOpen={isFormOpen}
         onClose={handleCloseForm}
-        onSuccess={handleFormSuccess}
+        onSubmit={handleFormSubmit}
         issueId={editingIssueId}
+        submitting={isCreating || isUpdating}
       />
     </div>
   );

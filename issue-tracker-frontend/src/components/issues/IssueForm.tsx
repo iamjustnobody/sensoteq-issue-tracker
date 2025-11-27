@@ -8,22 +8,27 @@ import { useIssueQuery } from "../../hooks/useIssueQuery.js";
 import { LoadFormModal } from "./LoadFormModal.js";
 import {
   createIssueSchema,
+  updateIssueSchema,
   type CreateIssueFormData,
+  type UpdateIssueFormData,
 } from "../../schemas/issue.schema.js";
 import { STATUS_OPTIONS } from "../../utils/constants.js";
 
 interface IssueFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void; // Called after successful create/update
+  onSubmit?: (data: CreateIssueFormData) => Promise<void>;
+  onSuccess?: () => void; // Called after successful create/update
   issueId?: number | null; // If provided, fetch and edit this issue
+  submitting?: boolean;
 }
 
 export const IssueForm: React.FC<IssueFormProps> = ({
   isOpen,
   onClose,
-  onSuccess,
+  onSubmit: handleFormSubmit,
   issueId,
+  submitting = false,
 }) => {
   const isEditMode = issueId != null;
 
@@ -40,10 +45,11 @@ export const IssueForm: React.FC<IssueFormProps> = ({
     control,
     reset,
     watch,
-    formState: { errors, isSubmitting, isValid, isDirty },
+    formState: { errors, isSubmitting: isFormSubmitting, isValid, isDirty },
   } = useForm<CreateIssueFormData>({
     resolver: zodResolver(
       createIssueSchema
+      //updateIssueSchema
     ) as unknown as Resolver<CreateIssueFormData>,
     defaultValues: {
       title: "",
@@ -54,6 +60,7 @@ export const IssueForm: React.FC<IssueFormProps> = ({
     mode: "onChange",
   });
 
+  const isSubmitting = submitting || isFormSubmitting;
   const progressValue = watch("progress");
 
   // Populate form when issue data is loaded
@@ -86,12 +93,9 @@ export const IssueForm: React.FC<IssueFormProps> = ({
     }
   }, [isOpen, isEditMode, issue, reset]);
 
-  const onSubmit = async () => {
-    //(data: CreateIssueFormData)
+  const onSubmit = async (data: CreateIssueFormData) => {
     try {
-      // The actual API call is handled by the parent component
-      // through the onSuccess callback
-      onSuccess();
+      await handleFormSubmit?.(data);
       onClose();
     } catch (err) {
       const message =
@@ -196,6 +200,11 @@ export const IssueForm: React.FC<IssueFormProps> = ({
                   </option>
                 ))}
               </select>
+              {errors.status && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.status.message}
+                </p>
+              )}
             </div>
 
             {/* Progress */}
