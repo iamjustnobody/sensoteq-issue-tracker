@@ -10,7 +10,6 @@ import type {
   IssueStatus,
 } from "../types";
 import { useIssuesStore } from "../stores/useIssuesStore";
-import { useEffect } from "react";
 
 /**
  * React Query hook for managing issues with optimistic updates & Zustand store sync

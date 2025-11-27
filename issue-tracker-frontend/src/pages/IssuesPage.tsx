@@ -57,6 +57,10 @@ const IssuesPage: React.FC = () => {
     isUpdating,
     isDeleting,
   } = useIssuesMutations();
+  // useIssuesQuery(
+  //   { search: debouncedSearch },
+  //   { skipFetch: !!debouncedSearch }
+  // ); //useIssuesMutations();
 
   // Filter issues based on search
   const filteredIssues = useMemo(() => {

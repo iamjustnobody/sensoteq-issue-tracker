@@ -8,9 +8,9 @@ import { useIssueQuery } from "../../hooks/useIssueQuery.js";
 import { LoadFormModal } from "./LoadFormModal.js";
 import {
   createIssueSchema,
-  updateIssueSchema,
+  // updateIssueSchema,
   type CreateIssueFormData,
-  type UpdateIssueFormData,
+  // type UpdateIssueFormData,
 } from "../../schemas/issue.schema.js";
 import { STATUS_OPTIONS } from "../../utils/constants.js";
 
